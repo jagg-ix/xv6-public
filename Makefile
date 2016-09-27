@@ -72,6 +72,7 @@ INCLUDE_DIRS = include/
 CC = $(TOOLPREFIX)gcc
 AS = $(TOOLPREFIX)gas
 LD = $(TOOLPREFIX)ld
+ARCH = x86_64
 OBJCOPY = $(TOOLPREFIX)objcopy
 OBJDUMP = $(TOOLPREFIX)objdump
 #CFLAGS = -fno-pic -static -fno-builtin -fno-strict-aliasing -O2 -Wall -MD -ggdb -m32 -Werror -fno-omit-frame-pointer
@@ -91,22 +92,22 @@ xv6memfs.img: bootblock kernelmemfs
 	dd if=bootblock of=xv6memfs.img conv=notrunc
 	dd if=kernelmemfs of=xv6memfs.img seek=1 conv=notrunc
 
-bootblock: bootasm.S bootmain.c
+bootblock: arch/$(ARCH)/bootasm.S bootmain.c
 	$(CC) $(CFLAGS) -fno-pic -O -nostdinc -I$(INCLUDE_DIRS) -c bootmain.c
-	$(CC) $(CFLAGS) -fno-pic -nostdinc -I$(INCLUDE_DIRS) -c bootasm.S
+	$(CC) $(CFLAGS) -fno-pic -nostdinc -I$(INCLUDE_DIRS) -c arch/$(ARCH)/bootasm.S
 	$(LD) $(LDFLAGS) -N -e start -Ttext 0x7C00 -o bootblock.o bootasm.o bootmain.o
 	$(OBJDUMP) -S bootblock.o > bootblock.asm
 	$(OBJCOPY) -S -O binary -j .text bootblock.o bootblock
 	./sign.pl bootblock
 
-entryother: entryother.S
-	$(CC) $(CFLAGS) -fno-pic -nostdinc -I$(INCLUDE_DIRS) -c entryother.S
+entryother: arch/$(ARCH)/entryother.S
+	$(CC) $(CFLAGS) -fno-pic -nostdinc -I$(INCLUDE_DIRS) -c arch/$(ARCH)/entryother.S
 	$(LD) $(LDFLAGS) -N -e start -Ttext 0x7000 -o bootblockother.o entryother.o
 	$(OBJCOPY) -S -O binary -j .text bootblockother.o entryother
 	$(OBJDUMP) -S bootblockother.o > entryother.asm
 
-initcode: initcode.S
-	$(CC) $(CFLAGS) -nostdinc -I$(INCLUDE_DIRS) -c initcode.S
+initcode: arch/$(ARCH)/initcode.S
+	$(CC) $(CFLAGS) -nostdinc -I$(INCLUDE_DIRS) -c arch/$(ARCH)/initcode.S
 	$(LD) $(LDFLAGS) -N -e start -Ttext 0 -o initcode.out initcode.o
 	$(OBJCOPY) -S -O binary initcode.out initcode
 	$(OBJDUMP) -S initcode.o > initcode.asm
