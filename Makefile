@@ -68,15 +68,24 @@ QEMU = $(shell if which qemu > /dev/null; \
 	echo "*** or have you tried setting the QEMU variable in Makefile?" 1>&2; \
 	echo "***" 1>&2; exit 1)
 endif
+
+# Generated obj files target dir
+OUTPUT_DIR   = output/
+
+# Headers files are here
 INCLUDE_DIRS = include/
+
+# User space applications source dir
+USR_SRC_DIR  = usr/
+
 CC = $(TOOLPREFIX)gcc
 AS = $(TOOLPREFIX)gas
 LD = $(TOOLPREFIX)ld
 ARCH = x86_64
 OBJCOPY = $(TOOLPREFIX)objcopy
 OBJDUMP = $(TOOLPREFIX)objdump
-#CFLAGS = -fno-pic -static -fno-builtin -fno-strict-aliasing -O2 -Wall -MD -ggdb -m32 -Werror -fno-omit-frame-pointer
-CFLAGS = -fno-pic -static -fno-builtin -fno-strict-aliasing -fvar-tracking -fvar-tracking-assignments -O0 -g -Wall -MD -gdwarf-2 -m32 -Werror -fno-omit-frame-pointer
+#CFLAGS = -fno-pic -static -fno-builtin -fno-strict-aliasing -O2 -Wall -MD -ggdb -m32 -Werror -fno-omit-frame-pointer -Iinclude -Iinclude/$(ARCH)/
+CFLAGS = -fno-pic -static -fno-builtin -fno-strict-aliasing -fvar-tracking -fvar-tracking-assignments -O0 -g -Wall -MD -gdwarf-2 -m32 -Werror -fno-omit-frame-pointer -Iinclude -Iinclude/$(ARCH)/
 CFLAGS += $(shell $(CC) -fno-stack-protector -E -x c /dev/null >/dev/null 2>&1 && echo -fno-stack-protector)
 ASFLAGS = -m32 -gdwarf-2 -Wa,-divide
 # FreeBSD ld wants ``elf_i386_fbsd''
@@ -112,8 +121,8 @@ initcode: arch/$(ARCH)/initcode.S
 	$(OBJCOPY) -S -O binary initcode.out initcode
 	$(OBJDUMP) -S initcode.o > initcode.asm
 
-kernel: $(OBJS) entry.o entryother initcode kernel.ld
-	$(LD) $(LDFLAGS) -T kernel.ld -o kernel entry.o $(OBJS) -b binary initcode entryother
+kernel: $(OBJS) entry.o entryother initcode kernel.ld 
+	$(LD) $(LDFLAGS) -T kernel.ld -o kernel entry.o $(OUTPUT_DIR)$(OBJS) -b binary initcode entryother
 	$(OBJDUMP) -S kernel > kernel.asm
 	$(OBJDUMP) -t kernel | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > kernel.sym
 
@@ -123,13 +132,13 @@ kernel: $(OBJS) entry.o entryother initcode kernel.ld
 # exploring disk buffering implementations, but it is
 # great for testing the kernel on real hardware without
 # needing a scratch disk.
-MEMFSOBJS = $(filter-out ide.o,$(OBJS)) memide.o
+MEMFSOBJS = $(filter-out ide.o,$(OUTPUT_DIR)$(OBJS)) memide.o
 kernelmemfs: $(MEMFSOBJS) entry.o entryother initcode kernel.ld fs.img
 	$(LD) $(LDFLAGS) -T kernel.ld -o kernelmemfs entry.o  $(MEMFSOBJS) -b binary initcode entryother fs.img
 	$(OBJDUMP) -S kernelmemfs > kernelmemfs.asm
 	$(OBJDUMP) -t kernelmemfs | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > kernelmemfs.sym
 
-tags: $(OBJS) entryother.S _init
+tags: $(OUTPUT_DIR)$(OBJS) entryother.S _init
 	etags *.S *.c
 
 vectors.S: vectors.pl

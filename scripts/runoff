@@ -1,7 +1,7 @@
 #!/bin/sh
 
 echo This script takes a minute to run.  Be patient. 1>&2
-
+echo This script tries to generate xv6.pdf ...  1>&2
 LC_CTYPE=C export LC_CTYPE
 
 # pad stdin to multiple of 120 lines
